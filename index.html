@@ -1,0 +1,525 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>System of Linear Equation (Using Inverse)</title>
+  <style>
+    :root {
+      --bg: #eaf4fd;
+      --sheet: #ffffff;
+      --ink: #0b2545;
+      --mute: #5a7390;
+      --grid: #c3dbf0;
+      --head: #dcedfb;
+      --primary: #1565c0;
+      --on-primary: #ffffff;
+      --sky: #4fc3f7;
+      --sky-soft: #d7f0fd;
+      --ok: #0f7b4a;
+      --bad: #c62828;
+      --focus: #0d47a1;
+      box-sizing: border-box;
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #07172b; --sheet: #0e2540; --ink: #e6f3ff; --mute: #94b2d1;
+        --grid: #25456b; --head: #153157; --primary: #4da3ff; --on-primary: #04162b;
+        --sky: #7dd3fc; --sky-soft: #123a5e; --ok: #5fdc9b; --bad: #ff8a80; --focus: #9cc9ff;
+      }
+    }
+    :root[data-theme="dark"] {
+      --bg: #07172b; --sheet: #0e2540; --ink: #e6f3ff; --mute: #94b2d1;
+      --grid: #25456b; --head: #153157; --primary: #4da3ff; --on-primary: #04162b;
+      --sky: #7dd3fc; --sky-soft: #123a5e; --ok: #5fdc9b; --bad: #ff8a80; --focus: #9cc9ff;
+    }
+
+    * { box-sizing: border-box; }
+    html { height: 100%; scroll-padding-top: env(safe-area-inset-top, 0px); }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font: 15px/1.5 "Segoe UI", Calibri, system-ui, sans-serif;
+    }
+    .wrap { max-width: 1040px; margin: 0 auto; padding: 16px; }
+
+    /* Header */
+    .hero {
+      background: linear-gradient(120deg, var(--primary), var(--sky));
+      color: #fff;
+      border-radius: 14px;
+      padding: 20px 22px;
+    }
+    .hero h1 { margin: 0; font-size: clamp(22px, 4vw, 32px); letter-spacing: -0.01em; }
+    .hero p { margin: 4px 0 0; opacity: 0.92; }
+
+    /* Toolbar */
+    .tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 14px 0; }
+    .tools .sp { flex: 1; }
+    select, button { font: inherit; color: var(--ink); }
+    select {
+      padding: 7px 10px; border: 1px solid var(--grid);
+      background: var(--sheet); border-radius: 8px;
+    }
+    button {
+      padding: 7px 14px; border: 1px solid var(--primary);
+      background: var(--sheet); border-radius: 8px; cursor: pointer;
+    }
+    button:hover { background: var(--sky-soft); }
+    button.primary { background: var(--primary); color: var(--on-primary); }
+    button.primary:hover { filter: brightness(1.1); }
+    :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+    /* Cards */
+    .card { background: var(--sheet); border: 1px solid var(--grid); border-radius: 12px; overflow: hidden; }
+    .card h2 {
+      margin: 0; padding: 8px 12px; font-size: 14px;
+      background: var(--head); border-bottom: 1px solid var(--grid);
+    }
+    .card h2 small { color: var(--mute); font-weight: 400; margin-left: 6px; }
+    .card .body { padding: 10px 12px; }
+    .blocks { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-top: 14px; }
+    .scroll { overflow-x: auto; }
+
+    /* Equations */
+    .eqs { font-family: "Cambria Math", Cambria, Georgia, serif; font-size: 17px; line-height: 1.9; }
+
+    /* Tables */
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid var(--grid); padding: 0; text-align: right; font-variant-numeric: tabular-nums; }
+    th { background: var(--head); color: var(--mute); font-weight: 600; font-size: 12px; padding: 3px 6px; text-align: center; }
+    td input {
+      width: 100%; min-width: 62px; border: 0; background: transparent;
+      padding: 8px; text-align: right; font: inherit; color: var(--ink);
+    }
+    td input:focus { outline: 2px solid var(--focus); outline-offset: -2px; background: var(--sheet); }
+    td.out { padding: 8px; }
+    td.k { background: var(--sky-soft); }
+    td.bad { outline: 2px solid var(--bad); outline-offset: -2px; }
+
+    /* Status and results */
+    .status { margin-top: 14px; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--grid); background: var(--sheet); }
+    .status.ok { border-color: var(--ok); color: var(--ok); font-weight: 600; }
+    .status.err { border-color: var(--bad); color: var(--bad); font-weight: 600; }
+    .sol { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+    .chip {
+      background: var(--primary); color: var(--on-primary);
+      border-radius: 999px; padding: 8px 18px; font-weight: 700; font-variant-numeric: tabular-nums;
+    }
+
+    /* Step-by-step */
+    details { margin-top: 14px; }
+    summary {
+      cursor: pointer; padding: 10px 14px; font-weight: 600;
+      background: var(--sheet); border: 1px solid var(--grid); border-radius: 12px;
+    }
+    details[open] summary { border-radius: 12px 12px 0 0; background: var(--head); }
+    .steps { border: 1px solid var(--grid); border-top: 0; border-radius: 0 0 12px 12px; background: var(--sheet); padding: 12px; }
+    .step { margin-bottom: 14px; }
+    .step p { margin: 0 0 6px; font-weight: 600; }
+    .step table { width: auto; }
+    .step td { padding: 4px 10px; min-width: 56px; }
+    .step td.sep { border-left: 3px solid var(--primary); }
+    .step.final p { color: var(--ok); }
+    .mono { font-family: "Cambria Math", Cambria, Georgia, serif; }
+    .note { color: var(--mute); font-size: 13px; margin-top: 12px; }
+
+    /* Graph cases */
+    .cases { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+    .case { border: 1px solid var(--grid); border-radius: 10px; padding: 10px; }
+    .case h3 { margin: 0 0 6px; font-size: 15px; color: var(--primary); }
+    .case p { margin: 6px 0 0; font-size: 14px; }
+    .case svg { width: 100%; height: auto; background: var(--sky-soft); border-radius: 8px; }
+    .case .axis { stroke: var(--mute); stroke-width: 1; }
+    .case .l1 { stroke: var(--primary); stroke-width: 3; fill: none; }
+    .case .l2 { stroke: var(--sky); stroke-width: 3; fill: none; }
+    .case .l2.dash { stroke: var(--ink); stroke-width: 1.5; stroke-dasharray: 5 4; }
+    .case .pt { fill: var(--bad); }
+    .now { margin-top: 12px; padding: 10px 12px; border-radius: 10px; background: var(--head); font-weight: 600; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <h1>System of Linear Equation (Using Inverse)</h1>
+    <p>Solve systems of linear equations with the inverse matrix, and see every step.</p>
+  </header>
+
+  <div class="tools">
+    <label for="n"><b>Unknowns</b></label><select id="n"></select>
+    <label for="dp"><b>Decimals</b></label>
+    <select id="dp"><option>2</option><option selected>4</option><option>6</option></select>
+    <label for="fmt"><b>Show as</b></label>
+    <select id="fmt"><option value="dec">Decimals</option><option value="frac">Fractions</option></select>
+    <button id="ex">Example</button>
+    <button id="rnd">Random</button>
+    <button id="clr">Clear</button>
+    <span class="sp"></span>
+    <button id="copy">Copy solution</button>
+    <button id="theme" aria-label="Switch colour theme">Dark mode</button>
+  </div>
+
+  <section class="card">
+    <h2>Your equations</h2>
+    <div class="body eqs" id="eqs"></div>
+  </section>
+
+  <div class="blocks">
+    <section class="card"><h2>Matrix A <small>coefficients</small></h2><div class="scroll"><table id="tA"></table></div></section>
+    <section class="card"><h2>Constants B</h2><div class="scroll"><table id="tB"></table></div></section>
+    <section class="card"><h2>Inverse A⁻¹ <small>MINVERSE(A)</small></h2><div class="scroll"><table id="tI"></table></div></section>
+    <section class="card"><h2>Solution X <small>MMULT(A⁻¹, B)</small></h2><div class="scroll"><table id="tX"></table></div></section>
+  </div>
+
+  <div id="status" class="status" role="status"></div>
+  <div id="sol" class="sol"></div>
+
+  <details id="dSteps">
+    <summary>How the Steps Work (Gauss-Jordan Elimination)</summary>
+    <div class="steps" id="steps"></div>
+  </details>
+  <details id="dCramer">
+    <summary>Key Forms of Linear Equation</summary>
+    <div class="steps mono">
+      <p><b>Standard form:</b> ax + by = c. Each equation in this solver uses this form, with one coefficient per unknown.</p>
+      <p><b>Slope-intercept form:</b> y = mx + b. Here m is the slope and b is where the line crosses the y-axis.</p>
+      <p><b>Point-slope form:</b> y − y₁ = m(x − x₁). Use it when you know one point and the slope.</p>
+      <p><b>General (n unknowns) form:</b> a₁x₁ + a₂x₂ + … + aₙxₙ = b.</p>
+      <p><b>Matrix form:</b> AX = B. Solving with the inverse gives X = A⁻¹B, which is exactly what this page computes.</p>
+    </div>
+  </details>
+  <details id="dGraph">
+    <summary>Graphing two equations in two unknowns: 3 possible cases</summary>
+    <div class="steps">
+      <div class="cases">
+        <div class="case">
+          <h3>Case 1: One solution</h3>
+          <svg viewBox="0 0 120 120" role="img" aria-label="Two lines crossing at one point">
+            <line class="axis" x1="5" y1="110" x2="115" y2="110"/><line class="axis" x1="5" y1="10" x2="5" y2="110"/>
+            <line class="l1" x1="10" y1="100" x2="110" y2="20"/>
+            <line class="l2" x1="10" y1="30" x2="110" y2="90"/>
+            <circle class="pt" cx="60" cy="60" r="5"/>
+          </svg>
+          <p>The lines intersect at exactly one point. The system is consistent and independent, det(A) ≠ 0, and the inverse exists.</p>
+        </div>
+        <div class="case">
+          <h3>Case 2: No solution</h3>
+          <svg viewBox="0 0 120 120" role="img" aria-label="Two parallel lines">
+            <line class="axis" x1="5" y1="110" x2="115" y2="110"/><line class="axis" x1="5" y1="10" x2="5" y2="110"/>
+            <line class="l1" x1="10" y1="100" x2="110" y2="40"/>
+            <line class="l2" x1="10" y1="70" x2="110" y2="10"/>
+          </svg>
+          <p>The lines are parallel: same slope, different intercepts, so they never meet. The system is inconsistent and det(A) = 0.</p>
+        </div>
+        <div class="case">
+          <h3>Case 3: Infinitely many solutions</h3>
+          <svg viewBox="0 0 120 120" role="img" aria-label="Two lines lying on top of each other">
+            <line class="axis" x1="5" y1="110" x2="115" y2="110"/><line class="axis" x1="5" y1="10" x2="5" y2="110"/>
+            <line class="l1" x1="10" y1="100" x2="110" y2="30"/>
+            <line class="l2 dash" x1="10" y1="100" x2="110" y2="30"/>
+          </svg>
+          <p>Both equations describe the same line, so every point on it is a solution. The system is consistent and dependent, and det(A) = 0.</p>
+        </div>
+      </div>
+      <div class="now" id="caseNow"></div>
+      <p class="note">In Cases 2 and 3 the matrix has no inverse, so this solver reports “no unique solution”.</p>
+    </div>
+  </details>
+  <details id="dVerify">
+    <summary>Verify by substitution</summary>
+    <div class="steps" id="verify"></div>
+  </details>
+
+  <p class="note">Results update as you type. Leave a cell empty for 0. Fractions like 3/4 work. Arrow keys and Enter move between cells.</p>
+</div>
+
+<script>
+  const $ = (s) => document.querySelector(s);
+  const names = "xyzwu";
+  let n = 3;
+  let lastSolution = "";
+
+  /* ---------- Theme ---------- */
+  function setTheme(t) {
+    document.documentElement.dataset.theme = t;
+    $("#theme").textContent = t === "dark" ? "Light mode" : "Dark mode";
+    try { localStorage.setItem("theme", t); } catch (e) {}
+  }
+  let saved = null;
+  try { saved = localStorage.getItem("theme"); } catch (e) {}
+  setTheme(saved || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
+  $("#theme").onclick = () => setTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark");
+
+  for (let i = 2; i <= 5; i++) $("#n").add(new Option(i + " × " + i, i));
+  $("#n").value = 3;
+
+  /* ---------- Number helpers ---------- */
+  function parse(s) {
+    s = s.trim();
+    if (s === "") return 0;
+    if (s.includes("/")) {
+      const [p, q] = s.split("/").map(Number);
+      return q ? p / q : NaN;
+    }
+    return Number(s);
+  }
+
+  function toFraction(x) {
+    const sign = x < 0 ? "-" : "";
+    x = Math.abs(x);
+    for (let q = 1; q <= 1000; q++) {
+      const p = Math.round(x * q);
+      if (Math.abs(p / q - x) < 1e-9) return sign + (q === 1 ? p : p + "/" + q);
+    }
+    return null;
+  }
+
+  function f(v) {
+    if (Math.abs(v) < 1e-10) v = 0;
+    if ($("#fmt").value === "frac") {
+      const fr = toFraction(v);
+      if (fr !== null) return String(fr);
+    }
+    return String(+v.toFixed(+$("#dp").value));
+  }
+
+  /* ---------- Linear algebra ---------- */
+  function invert(A) {
+    const m = A.length;
+    const M = A.map((r, i) => [...r, ...Array.from({ length: m }, (_, j) => +(i === j))]);
+    let det = 1;
+    for (let c = 0; c < m; c++) {
+      let p = c;
+      for (let r = c + 1; r < m; r++) if (Math.abs(M[r][c]) > Math.abs(M[p][c])) p = r;
+      if (Math.abs(M[p][c]) < 1e-12) return { inv: null, det: 0 };
+      if (p !== c) { [M[p], M[c]] = [M[c], M[p]]; det = -det; }
+      const pv = M[c][c];
+      det *= pv;
+      for (let j = 0; j < 2 * m; j++) M[c][j] /= pv;
+      for (let r = 0; r < m; r++) {
+        if (r === c) continue;
+        const k = M[r][c];
+        if (k) for (let j = 0; j < 2 * m; j++) M[r][j] -= k * M[c][j];
+      }
+    }
+    return { inv: M.map((r) => r.slice(m)), det };
+  }
+
+  /* Gauss–Jordan on [A | B], recording every row operation */
+  function gaussSteps(A, B) {
+    const m = A.length;
+    const M = A.map((r, i) => [...r, B[i]]);
+    const steps = [{ label: "Start with the augmented matrix [A | B]", M: M.map((r) => [...r]) }];
+    const snap = (label) => steps.push({ label, M: M.map((r) => [...r]) });
+    for (let c = 0; c < m; c++) {
+      let p = c;
+      for (let r = c + 1; r < m; r++) if (Math.abs(M[r][c]) > Math.abs(M[p][c])) p = r;
+      if (p !== c) {
+        [M[p], M[c]] = [M[c], M[p]];
+        snap(`Swap R${c + 1} ↔ R${p + 1} (largest pivot in column ${names[c]})`);
+      }
+      const pv = M[c][c];
+      if (Math.abs(pv - 1) > 1e-12) {
+        for (let j = 0; j <= m; j++) M[c][j] /= pv;
+        snap(`R${c + 1} ← R${c + 1} ÷ ${f(pv)}`);
+      }
+      for (let r = 0; r < m; r++) {
+        if (r === c) continue;
+        const k = M[r][c];
+        if (Math.abs(k) < 1e-12) continue;
+        for (let j = 0; j <= m; j++) M[r][j] -= k * M[c][j];
+        snap(`R${r + 1} ← R${r + 1} − (${f(k)})·R${c + 1}`);
+      }
+    }
+    steps[steps.length - 1].final = true;
+    return steps;
+  }
+
+  /* ---------- Rendering ---------- */
+  const cell = (i, j) => document.querySelector(`input[data-i="${i}"][data-j="${j}"]`);
+
+  function build(vals) {
+    n = +$("#n").value;
+    const heads = (fn) => [...Array(n)].map((_, j) => `<th>${fn(j)}</th>`).join("");
+    let a = `<tr><th></th>${heads((j) => names[j])}</tr>`;
+    let b = `<tr><th></th><th>B</th></tr>`;
+    let inv = `<tr><th></th>${heads((j) => j + 1)}</tr>`;
+    let x = `<tr><th></th><th>X</th></tr>`;
+
+    for (let i = 0; i < n; i++) {
+      const row = [...Array(n)].map((_, j) => `
+        <td><input data-i="${i}" data-j="${j}" inputmode="decimal"
+          aria-label="Row ${i + 1}, ${names[j]} coefficient" value="${vals ? vals[i][j] : ""}"></td>`).join("");
+      a += `<tr><th>${i + 1}</th>${row}</tr>`;
+      b += `<tr><th>${i + 1}</th><td class="k"><input data-i="${i}" data-j="${n}" inputmode="decimal"
+          aria-label="Row ${i + 1}, constant" value="${vals ? vals[i][n] : ""}"></td></tr>`;
+      inv += `<tr><th>${i + 1}</th>${[...Array(n)].map((_, j) => `<td class="out" id="i${i}_${j}"></td>`).join("")}</tr>`;
+      x += `<tr><th>${names[i]}</th><td class="out" id="x${i}"></td></tr>`;
+    }
+    $("#tA").innerHTML = a;
+    $("#tB").innerHTML = b;
+    $("#tI").innerHTML = inv;
+    $("#tX").innerHTML = x;
+    calc();
+  }
+
+  function matrixHTML(M) {
+    const cols = M[0].length;
+    return "<table>" + M.map((r) =>
+      "<tr>" + r.map((v, j) => `<td class="${j === cols - 1 ? "sep" : ""}">${f(v)}</td>`).join("") + "</tr>"
+    ).join("") + "</table>";
+  }
+
+  function equationText(row, rhs) {
+    let s = "";
+    row.forEach((v, j) => {
+      if (Math.abs(v) < 1e-12) return;
+      const a = Math.abs(v);
+      s += s ? (v < 0 ? " − " : " + ") : (v < 0 ? "−" : "");
+      s += (a === 1 ? "" : f(a)) + names[j];
+    });
+    return `${s || "0"} = ${f(rhs)}`;
+  }
+
+  function clearOutputs() {
+    for (let i = 0; i < n; i++) {
+      $("#x" + i).textContent = "";
+      for (let j = 0; j < n; j++) $(`#i${i}_${j}`).textContent = "";
+    }
+    $("#sol").innerHTML = "";
+    $("#steps").innerHTML = $("#verify").innerHTML = "<p>Fix the input to see this section.</p>";
+    lastSolution = "";
+  }
+
+  /* Classify a 2 × 2 system as one of the three graphing cases */
+  function updateCase(A, B) {
+    const out = $("#caseNow");
+    if (n !== 2) {
+      out.textContent = "Set Unknowns to 2 × 2 to see which case your system matches.";
+      return;
+    }
+    const [[a, b], [c, d]] = A;
+    const [e, g] = B;
+    if (Math.abs(a * d - b * c) > 1e-12) {
+      out.textContent = "Your system is Case 1: the lines cross at one point.";
+    } else if (Math.abs(a * g - c * e) < 1e-9 && Math.abs(b * g - d * e) < 1e-9) {
+      out.textContent = "Your system is Case 3: both equations are the same line, so there are infinitely many solutions.";
+    } else {
+      out.textContent = "Your system is Case 2: the lines are parallel, so there is no solution.";
+    }
+  }
+
+  function calc() {
+    document.querySelectorAll("td.bad").forEach((t) => t.classList.remove("bad"));
+    const A = [], B = [];
+    let err = null;
+
+    for (let i = 0; i < n; i++) {
+      A.push([]);
+      for (let j = 0; j <= n; j++) {
+        const el = cell(i, j);
+        const v = parse(el.value);
+        if (!Number.isFinite(v)) {
+          el.parentElement.classList.add("bad");
+          err = err || `Row ${i + 1}: “${el.value}” is not a number. Use digits, decimals or fractions like 3/4.`;
+        }
+        j < n ? A[i].push(v) : B.push(v);
+      }
+    }
+
+    $("#eqs").innerHTML = err ? "" : A.map((r, i) => equationText(r, B[i])).join("<br>");
+
+    const st = $("#status");
+    if (err) { st.className = "status err"; st.textContent = err; $("#caseNow").textContent = ""; clearOutputs(); return; }
+    updateCase(A, B);
+
+    const { inv, det: d } = invert(A);
+    if (!inv) {
+      st.className = "status err";
+      st.textContent = "No unique solution: det(A) = 0, so A has no inverse. Check for repeated or proportional equations.";
+      clearOutputs();
+      return;
+    }
+
+    const X = inv.map((r) => r.reduce((s, v, j) => s + v * B[j], 0));
+    for (let i = 0; i < n; i++) {
+      $("#x" + i).textContent = f(X[i]);
+      for (let j = 0; j < n; j++) $(`#i${i}_${j}`).textContent = f(inv[i][j]);
+    }
+
+    const good = A.every((r, i) => Math.abs(r.reduce((s, v, j) => s + v * X[j], 0) - B[i]) < 1e-8);
+    st.className = "status ok";
+    st.textContent = `det(A) = ${f(d)}. ${good ? "Check passed: A·X reproduces B." : "Rounding differences remain in the check."}`;
+    $("#sol").innerHTML = X.map((v, i) => `<div class="chip">${names[i]} = ${f(v)}</div>`).join("");
+    lastSolution = X.map((v, i) => `${names[i]} = ${f(v)}`).join(", ");
+
+    /* Step-by-step */
+    $("#steps").innerHTML =
+      `<p class="mono">Goal: reduce [A | B] to [I | X]. The last column then holds the solution.</p>` +
+      gaussSteps(A, B).map((s) =>
+        `<div class="step${s.final ? " final" : ""}"><p>${s.label}${s.final ? " — solved" : ""}</p>${matrixHTML(s.M)}</div>`
+      ).join("");
+
+    /* Substitution check */
+    $("#verify").innerHTML = A.map((r, i) => {
+      const lhs = r.reduce((s, v, j) => s + v * X[j], 0);
+      const ok = Math.abs(lhs - B[i]) < 1e-8;
+      return `<p class="mono">Equation ${i + 1}: ${f(lhs)} = ${f(B[i])} ${ok ? "✓" : "≈"}</p>`;
+    }).join("");
+  }
+
+  /* ---------- Actions ---------- */
+  const EXAMPLES = {
+    2: [[2, 1, 5], [1, -1, 1]],
+    3: [[2, 1, -1, 8], [-3, -1, 2, -11], [-2, 1, 2, -3]]
+  };
+
+  function randomSystem() {
+    const s = Array.from({ length: n }, () => Math.floor(Math.random() * 11) - 5);
+    let A;
+    do {
+      A = Array.from({ length: n }, () => Array.from({ length: n }, () => Math.floor(Math.random() * 9) - 4));
+    } while (!invert(A).inv);
+    return A.map((r) => [...r, r.reduce((t, v, j) => t + v * s[j], 0)]);
+  }
+
+  $("#n").onchange = () => build();
+  $("#dp").onchange = calc;
+  $("#fmt").onchange = calc;
+  $("#clr").onclick = () => build();
+  $("#ex").onclick = () => build(EXAMPLES[n] || randomSystem());
+  $("#rnd").onclick = () => build(randomSystem());
+  $("#copy").onclick = async () => {
+    const btn = $("#copy");
+    try {
+      await navigator.clipboard.writeText(lastSolution || "No solution yet");
+      btn.textContent = "Copied";
+    } catch (e) {
+      btn.textContent = "Copy not allowed";
+    }
+    setTimeout(() => (btn.textContent = "Copy solution"), 1500);
+  };
+
+  document.addEventListener("input", (e) => { if (e.target.matches("td input")) calc(); });
+  document.addEventListener("keydown", (e) => {
+    const el = e.target;
+    if (!el.matches || !el.matches("td input")) return;
+    let i = +el.dataset.i, j = +el.dataset.j;
+    if (e.key === "ArrowDown" || e.key === "Enter") i++;
+    else if (e.key === "ArrowUp") i--;
+    else if (e.key === "ArrowRight" && el.selectionStart === el.value.length) j++;
+    else if (e.key === "ArrowLeft" && el.selectionStart === 0) j--;
+    else return;
+    const t = cell(i, j);
+    if (t) { e.preventDefault(); t.focus(); t.select(); }
+  });
+
+  build(EXAMPLES[3]);
+</script>
+</body>
+</html>
